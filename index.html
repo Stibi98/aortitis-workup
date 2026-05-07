@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aortitis · Etiologic Workup Navigator</title>
+<meta name="description" content="Interactive differential diagnosis tool for aortitis. Educational reference for clinicians.">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { background: #f4efe6; }
+  #root { min-height: 100vh; }
+  /* Loading state before React mounts */
+  .loading {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+    font-family: Georgia, serif; color: #4a443a;
+  }
+  .loading-title { font-size: 22px; font-style: italic; margin-bottom: 8px; }
+  .loading-sub { font-size: 13px; color: #7a7264; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="loading">
+    <div class="loading-title">Aortitis · Etiologic Workup</div>
+    <div class="loading-sub">Loading interface…</div>
+  </div>
+</div>
+
+<!-- React 18 from CDN -->
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+
+<script>
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+// ============================================================
+// Browser-ready version of the Aortitis Workup component
+// ============================================================
+const {
+  useState,
+  useMemo,
+  useEffect
+} = React;
+
+// ---- Inline SVG icon components (lucide-icons MIT licensed) ----
+const Icon = ({
+  size = 16,
+  children,
+  ...props
+}) => /*#__PURE__*/React.createElement("svg", _extends({
+  xmlns: "http://www.w3.org/2000/svg",
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, props), children);
+const ChevronRight = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "m9 18 6-6-6-6"
+}));
+const X = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "M18 6 6 18"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m6 6 12 12"
+}));
+const Printer = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "M6 9V2h12v7"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+}), /*#__PURE__*/React.createElement("rect", {
+  x: "6",
+  y: "14",
+  width: "12",
+  height: "8",
+  rx: "1"
+}));
+const RotateCcw = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M3 3v5h5"
+}));
+const BookOpen = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "M12 7v14"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"
+}));
+const AlertTriangle = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M12 9v4"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M12 17h.01"
+}));
+const Microscope = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "M6 18h8"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M3 22h18"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M14 22a7 7 0 1 0 0-14h-1"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M9 14h2"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"
+}));
+const FlaskConical = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M8.5 2h7"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M7 16h10"
+}));
+const Users = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("path", {
+  d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+}), /*#__PURE__*/React.createElement("circle", {
+  cx: "9",
+  cy: "7",
+  r: "4"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M22 21v-2a4 4 0 0 0-3-3.87"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M16 3.13a4 4 0 0 1 0 7.75"
+}));
+const ImageIcon = p => /*#__PURE__*/React.createElement(Icon, p, /*#__PURE__*/React.createElement("rect", {
+  width: "18",
+  height: "18",
+  x: "3",
+  y: "3",
+  rx: "2",
+  ry: "2"
+}), /*#__PURE__*/React.createElement("circle", {
+  cx: "9",
+  cy: "9",
+  r: "2"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"
+}));
+
+// ============================================================
+// ETIOLOGY DATABASE
+// ============================================================
+const ETIOLOGIES = {
+  gca: {
+    name: 'Giant Cell Arteritis',
+    abbrev: 'GCA',
+    category: 'lvv',
+    categoryLabel: 'Large-vessel vasculitis',
+    blurb: 'Granulomatous panarteritis of the aorta and large branches in adults ≥50, often with cranial features.',
+    redFlags: ['Age ≥ 50 with new headache, jaw claudication, scalp tenderness, or visual loss', 'Polymyalgia rheumatica overlap (~40–50%)', 'ESR > 50 mm/h and/or CRP markedly elevated in >95%', 'Halo sign on temporal/axillary ultrasound (OMERACT definition)', 'Limb claudication, asymmetric BP, or supra-aortic bruits suggest LV-GCA variant', 'Aortic involvement on PET/MRI in 30–80% when systematically imaged'],
+    imaging: ['Concentric, smooth, long-segment wall thickening of thoracic aorta and supra-aortic branches on CTA/MRA', 'FDG-PET grade ≥2 (≥ liver) along aorta and large branches', 'Halo sign on US of temporal, axillary, vertebral arteries', 'Late complications: thoracic aortic aneurysm (×2 risk) and dissection (×5 risk)'],
+    labs: ['ESR, CRP markedly elevated; normocytic anemia; reactive thrombocytosis', 'IL-6 elevated (rationale for tocilizumab)', 'No specific autoantibody — diagnosis is clinical + histologic + imaging'],
+    histology: 'Granulomatous panarteritis with multinucleated giant cells at the media–intima junction, disruption of internal elastic lamina, skip lesions. Aortic histology overlaps completely with Takayasu.',
+    distribution: 'Thoracic aorta predominant; ascending and arch most commonly involved; supra-aortic branches.',
+    workup: ['Temporal artery biopsy (≥1 cm specimen) — still gold standard if cranial features', 'Vascular ultrasound (temporal + axillary) — first-line per EULAR 2018', 'Whole-body FDG-PET-CT or aortic MRA for large-vessel mapping', 'Baseline aortic CT/MRA at diagnosis, then annual surveillance for aneurysm', 'Rule out infection (blood cultures, syphilis serology, IGRA) before steroids'],
+    citations: ['1', '2', '3', '4', '5']
+  },
+  lvgca: {
+    name: 'LV-GCA (large-vessel variant)',
+    abbrev: 'LV-GCA',
+    category: 'lvv',
+    categoryLabel: 'Large-vessel vasculitis',
+    blurb: 'GCA phenotype dominated by aortic and supra-aortic branch involvement; often TAB-negative.',
+    redFlags: ['Age ≥ 50 with constitutional symptoms (fever, weight loss, fatigue) and elevated inflammatory markers', 'Limb claudication or pulse deficit without classic cranial features', 'Negative temporal artery biopsy in a patient with elevated ESR/CRP', 'Subclavian/axillary involvement on imaging', 'Increased risk of aortic aneurysm and dissection compared to cranial GCA'],
+    imaging: ['Symmetric circumferential wall thickening of subclavian, axillary, vertebral arteries (typical "Mickey Mouse" or "macaroni" sign on US axillary)', 'Long-segment FDG uptake throughout the aorta on PET-CT', 'Aortic branch stenoses, particularly subclavian'],
+    labs: ['ESR, CRP elevated; IL-6 driven acute phase; no specific autoantibody'],
+    histology: 'Same as cranial GCA — granulomatous with giant cells.',
+    distribution: 'Aorta (ascending > arch > descending) and primary branches; subclavian/axillary classic.',
+    workup: ['FDG-PET-CT first-line if no cranial features but high suspicion', 'Vascular ultrasound of axillary, subclavian, vertebral arteries', 'TAB still useful (positive in ~50% of LV-GCA)', 'Baseline aortic imaging + annual surveillance'],
+    citations: ['3', '4', '5']
+  },
+  tak: {
+    name: 'Takayasu Arteritis',
+    abbrev: 'TAK',
+    category: 'lvv',
+    categoryLabel: 'Large-vessel vasculitis',
+    blurb: 'Granulomatous LVV typically in women <40, predilection for arch and abdominal aorta with branch stenoses.',
+    redFlags: ['Female age <40, especially Asian, Turkish, Latin American, Indian background', 'Limb claudication, BP differential >10 mmHg between arms, pulse deficit', 'Carotidynia, vascular bruits', 'Renovascular hypertension (renal artery stenosis)', 'Aortic regurgitation from root dilation', 'Coronary ostial stenosis presenting as MI in young woman'],
+    imaging: ['Long, smooth concentric wall thickening of aorta and primary branches', 'Stenoses, occlusions, post-stenotic dilatation, occasionally aneurysms', 'Hata/Numano classification (I–V) by distribution', 'FDG-PET in active disease; MRA preferred for follow-up to limit radiation'],
+    labs: ['ESR/CRP often elevated but may be normal in chronic phase; no specific autoantibody'],
+    histology: 'Granulomatous panarteritis with giant cells — histologically indistinguishable from GCA on the aorta. Adventitial scarring and intimal hyperplasia in chronic phase.',
+    distribution: 'Aorta (entire) and primary branches; arch (type I), thoracic+abdominal (IIb/III), abdominal/renal (IV), combined (V).',
+    workup: ['MRA whole aorta + branches (preferred for young patients to limit radiation)', 'CTA if MRA unavailable', 'FDG-PET if assessing activity in equivocal cases', 'ITAS2010 score for activity tracking', 'Echocardiography for aortic regurgitation and pulmonary HTN'],
+    citations: ['6', '7', '8']
+  },
+  cia: {
+    name: 'Clinically Isolated Aortitis',
+    abbrev: 'CIA',
+    category: 'lvv',
+    categoryLabel: 'Large-vessel vasculitis',
+    blurb: 'Aortitis identified incidentally at aneurysm surgery without systemic vasculitis or rheumatic disease.',
+    redFlags: ['Incidental finding on resected aortic specimen', 'Ascending aorta in 96% of cases', 'Female predominance (~2:1)', 'Up to 20–40% develop new vascular abnormalities on longitudinal imaging', '~16% eventually meet criteria for systemic LVV', 'PET often NEGATIVE — complicates decision to immunosuppress'],
+    imaging: ['Aortic aneurysm without inflammatory wall thickening on initial CT', 'Subsequent imaging may reveal new branch involvement', 'FDG-PET typically negative in CIA aneurysms'],
+    labs: ['Inflammatory markers often normal; antibody panel negative'],
+    histology: 'Granulomatous aortitis indistinguishable from GCA on the aortic specimen alone.',
+    distribution: 'Ascending thoracic aorta strongly predominant.',
+    workup: ['Whole-body imaging (CTA/MRA + PET-CT) at diagnosis to exclude systemic LVV', 'Rheumatology referral mandatory — under-referred in real practice', 'Surveillance imaging every 6–12 months for at least 5 years', 'Consider glucocorticoid trial if PET-positive or new lesions develop'],
+    citations: ['9', '10', '11']
+  },
+  igg4: {
+    name: 'IgG4-Related Aortitis/Periaortitis',
+    abbrev: 'IgG4-RD',
+    category: 'fibroinflammatory',
+    categoryLabel: 'Fibro-inflammatory',
+    blurb: 'Lymphoplasmacytic adventitial-dominant inflammation; major cause of inflammatory abdominal aortic aneurysm.',
+    redFlags: ['Older male (M:F ~2:1), median age 60–70', 'Multi-organ involvement: pancreas (autoimmune pancreatitis), salivary/lacrimal glands (Mikulicz), kidney (TIN), retroperitoneum', 'Tumefactive periaortic mass on imaging', 'Serum IgG4 elevated (but normal in ~30%)', 'Steroids accelerate rupture in untreated aneurysm — surgical stabilization may precede immunosuppression', 'Roughly 50% of "inflammatory abdominal aortic aneurysms" meet IgG4-RD criteria'],
+    imaging: ['Periaortic soft-tissue mantle (often hypoenhancing rind)', 'Infrarenal abdominal aorta most common; thoracic aorta in subset', 'Concomitant retroperitoneal fibrosis, hydronephrosis, renal artery encasement', 'FDG-PET avid in active lesions'],
+    labs: ['Serum IgG4 elevated (>135 mg/dL) — NOT specific or sensitive (normal in ~30%)', 'Hypocomplementemia, eosinophilia in subset', 'Polyclonal hypergammaglobulinemia'],
+    histology: 'Storiform fibrosis + dense lymphoplasmacytic infiltrate + obliterative phlebitis; >50 IgG4+ plasma cells/HPF in aortic specimens AND IgG4+/IgG+ ratio >50% (Boston consensus 2012). CAUTION: chronic infectious aortitis can mimic IgG4-RD.',
+    distribution: 'Infrarenal abdominal aorta most commonly; thoracic aorta in ~30%.',
+    workup: ['Tissue biopsy with IgG4/IgG immunostaining (cut-offs are organ-specific)', 'Serum IgG subclasses, complement, IgE, eosinophils', 'Cross-sectional imaging head-to-pelvis to map other IgG4-RD organ involvement', 'Exclude infection (blood cultures, syphilis, Coxiella, TB) — IgG4+ infiltrates can be seen in chronic infectious aortitis', 'Consider surgical repair before steroids if rapidly enlarging aneurysm'],
+    citations: ['12', '13', '14', '15']
+  },
+  ecd: {
+    name: 'Erdheim–Chester Disease',
+    abbrev: 'ECD',
+    category: 'fibroinflammatory',
+    categoryLabel: 'Fibro-inflammatory',
+    blurb: 'Clonal MAPK-driven histiocytic neoplasm with pathognomonic "coated aorta".',
+    redFlags: ['Symmetric long-bone pain, especially diaphyses of long bones (knee region most classic)', 'Diabetes insipidus, exophthalmos, retro-orbital infiltration', 'Perirenal "hairy kidney" sign on CT', 'Cardiovascular: "coated aorta" — circumferential periaortic soft-tissue sheathing in ~40%', 'BRAF V600E mutation in ~57–70%; MAP2K1 in ~20%', 'Hypoalphalipoproteinemia (low HDL) is a strong predictor of aortic involvement'],
+    imaging: ['"Coated aorta" sign: circumferential periaortic soft tissue along thoracic and abdominal aorta and major branches', 'Symmetric osteosclerosis of long bone diaphyses on plain film/CT', '"Hairy kidney" — perirenal infiltration', 'Right atrial pseudotumor in subset', 'FDG-PET avid; ⁹⁹mTc bone scan with symmetric long-bone uptake'],
+    labs: ['Inflammatory markers variable', 'Hypoalphalipoproteinemia (low HDL) — predictor of aortic disease', 'MAPK molecular testing on tissue: BRAF V600E, MAP2K1, NRAS, KRAS'],
+    histology: 'Foamy CD68+, CD163+, Factor XIIIa+, CD1a-, S100- (or weakly +) histiocytes with Touton giant cells; storiform fibrosis. BRAF V600E IHC available.',
+    distribution: 'Periaortic — thoracic AND abdominal aorta and major branches simultaneously; cardiac perivascular.',
+    workup: ['Whole-body FDG-PET-CT and ⁹⁹mTc bone scan', 'Biopsy of accessible site (peri-renal, retro-orbital, bone) with MAPK molecular profiling', 'Cardiac MRI for myocardial/pericardial involvement', 'Brain MRI for CNS lesions, pituitary infundibulum', 'BRAF/MEK inhibitor (vemurafenib, dabrafenib-trametinib) for BRAF+; MEK inhibitor for wild-type'],
+    citations: ['16', '17', '18']
+  },
+  rpf: {
+    name: 'Chronic Periaortitis / Retroperitoneal Fibrosis',
+    abbrev: 'CP/RPF',
+    category: 'fibroinflammatory',
+    categoryLabel: 'Fibro-inflammatory',
+    blurb: 'Idiopathic or secondary fibroinflammatory mantle around infrarenal aorta and iliacs (Ormond disease).',
+    redFlags: ['Dull lower back/flank/abdominal pain', 'Bilateral hydronephrosis from ureteric encasement, sometimes with AKI', 'Lower limb edema, varicocele, scrotal/leg pain (vascular compression)', 'Often middle-aged men', 'Subset overlap with IgG4-RD', 'Secondary causes: drugs (methysergide, β-blockers, ergots), malignancy, infection, radiation'],
+    imaging: ['Periaortic soft-tissue rind from infrarenal aorta to common iliacs', 'Anterior and lateral encasement; posterior aorta typically spared (helps distinguish from RPL lymphoma)', 'Hydronephrosis common', 'FDG-PET avid in active phase'],
+    labs: ['ESR/CRP elevated; ANA may be positive; check IgG4 subclasses'],
+    histology: 'Lymphoplasmacytic infiltrate with myofibroblastic proliferation and dense collagen; IgG4+ plasma cells in subset.',
+    distribution: 'Infrarenal aorta, common iliacs, ureters.',
+    workup: ['Cross-sectional imaging (CT/MRI) including IV urography phase', 'Renal function, IgG subclasses, ANA', 'CT-guided or surgical biopsy if atypical features (asymmetry, posterior involvement, malignancy concern)', 'Vaglio RCT (Lancet 2011): prednisone superior to tamoxifen'],
+    citations: ['19']
+  },
+  behcet: {
+    name: 'Behçet Syndrome (Vasculo-Behçet)',
+    abbrev: 'BD',
+    category: 'autoimmune',
+    categoryLabel: 'Systemic immune',
+    blurb: 'Variable-vessel vasculitis; aortic pseudoaneurysm is the most feared arterial manifestation.',
+    redFlags: ['Recurrent oral ulcers + genital ulcers + uveitis (panuveitis with hypopyon)', 'Mediterranean, Middle Eastern, Asian background; HLA-B51 association', 'Pulmonary artery aneurysms — leading cause of mortality', 'Pseudoaneurysm of abdominal aorta with risk of rupture', 'Pathergy reaction (papulopustule at site of needle prick)', 'Deep vein thrombosis', 'Steroids/cyclophosphamide BEFORE surgical or endovascular repair to prevent suture-line aneurysm'],
+    imaging: ['Saccular pseudoaneurysm rather than fusiform aneurysm', 'Abdominal aorta most commonly involved', 'Pulmonary artery aneurysms (often bilateral, multiple)', 'Coexisting venous thrombosis (vena cava, hepatic veins, dural sinus)'],
+    labs: ['HLA-B51 association; ESR/CRP variable; no specific antibody; pathergy test positive in 30–60% (regional variation)'],
+    histology: 'Transmural neutrophilic vasculitis of vasa vasorum with leukocytoclasis; lymphocytic infiltrate in chronic phase.',
+    distribution: 'Abdominal aorta > thoracic aorta; pulmonary arteries; deep veins.',
+    workup: ['ISG/ICBD criteria for diagnosis', 'CTA/MRA for arterial mapping', 'Pulmonary artery imaging (CTA) — do not miss pulmonary aneurysm', 'Echo for pulmonary HTN', 'Cyclophosphamide + glucocorticoids first-line; anti-TNF or tocilizumab refractory'],
+    citations: ['20', '21']
+  },
+  cogan: {
+    name: 'Cogan Syndrome',
+    abbrev: 'CS',
+    category: 'autoimmune',
+    categoryLabel: 'Systemic immune',
+    blurb: 'Interstitial keratitis + audiovestibular dysfunction with aortitis in ~10%.',
+    redFlags: ['Bilateral interstitial keratitis (ocular pain, photophobia, blurred vision)', 'Sensorineural hearing loss + vertigo (Ménière-like)', 'Aortic regurgitation from root dilation', 'Coronary arteritis can occur', 'Young adults, no sex predominance'],
+    imaging: ['Aortic root dilation, ascending aortic aneurysm, AR; coronary involvement on CTA in subset'],
+    labs: ['Inflammatory markers elevated; ANA, ANCA, RF typically negative; no specific antibody'],
+    histology: 'Granulomatous or lymphocytic aortitis indistinguishable from GCA in some cases.',
+    distribution: 'Aortic root and ascending aorta predominant.',
+    workup: ['Slit-lamp examination, audiogram, vestibular testing', 'Echocardiography (TTE/TEE) for AR', 'CTA/MRA aorta', 'High-dose glucocorticoids; consider anti-TNF'],
+    citations: ['22']
+  },
+  rp: {
+    name: 'Relapsing Polychondritis',
+    abbrev: 'RP',
+    category: 'autoimmune',
+    categoryLabel: 'Systemic immune',
+    blurb: 'Cartilage inflammation with aortitis in ~6–10%; often multiple ascending aneurysms.',
+    redFlags: ['Recurrent auricular chondritis sparing earlobe', 'Saddle-nose deformity from nasal cartilage destruction', 'Tracheobronchial chondritis (life-threatening airway collapse)', 'Audiovestibular involvement', 'Aortic regurgitation, ascending aortic aneurysm (often multiple)', 'MAGIC syndrome: RP + Behçet overlap', 'Newly recognized: VEXAS in older men with RP-like presentation'],
+    imaging: ['Multiple ascending aortic aneurysms', 'Aortic root dilation with AR', 'Tracheal wall thickening with calcification, expiratory collapse on dynamic CT'],
+    labs: ['Inflammatory markers elevated in active disease; anti-collagen II antibodies (research only)'],
+    histology: 'Chondritis with neutrophilic and lymphocytic infiltrate, cartilage destruction; aortic histology shows medial elastolysis with mononuclear infiltrate.',
+    distribution: 'Ascending aorta predominant; aneurysms often multiple.',
+    workup: ['McAdam/Damiani criteria', 'Pulmonary function with flow-volume loops; dynamic chest CT', 'Echocardiography + aortic CTA', 'In older men with RP-like phenotype + cytopenias: rule out VEXAS (UBA1 sequencing)'],
+    citations: ['23', '24']
+  },
+  sarcoid: {
+    name: 'Sarcoidosis',
+    abbrev: 'Sarc',
+    category: 'autoimmune',
+    categoryLabel: 'Systemic immune',
+    blurb: 'Granulomatous aortitis (rare); can mimic Takayasu phenotype.',
+    redFlags: ['Bilateral hilar lymphadenopathy', 'Pulmonary infiltrates, restrictive pattern', 'Erythema nodosum, lupus pernio', 'Uveitis', 'Cardiac sarcoid (heart block, ventricular arrhythmia, cardiomyopathy)', 'African-American or Asian background overrepresented', 'Hypercalcemia/hypercalciuria'],
+    imaging: ['Mediastinal/hilar lymphadenopathy', 'Aortic wall thickening with FDG uptake (mimicking TAK)', 'Cardiac MRI: late gadolinium enhancement in basal septum'],
+    labs: ['Elevated ACE (sensitivity ~60%); hypercalcemia; lymphopenia; soluble IL-2 receptor (more sensitive)'],
+    histology: 'Non-caseating granulomas with epithelioid histiocytes and Schaumann/asteroid bodies; absent caseation distinguishes from TB.',
+    distribution: 'Aorta and primary branches; pattern often resembles Takayasu.',
+    workup: ['Chest CT, mediastinal lymph node biopsy or EBUS', 'Cardiac MRI + FDG-PET (cardiac sarcoid)', 'Full ophthalmologic exam', 'Calcium, ACE, sIL-2R', 'Exclude TB before steroids'],
+    citations: ['25', '26']
+  },
+  ra: {
+    name: 'Rheumatoid Aortitis',
+    abbrev: 'RA',
+    category: 'autoimmune',
+    categoryLabel: 'Systemic immune',
+    blurb: 'Rare in long-standing erosive seropositive RA; histologically distinctive rheumatoid granulomas.',
+    redFlags: ['Long-standing erosive seropositive RA, often nodular', 'Aortic regurgitation or ascending aortic aneurysm', 'High-titer RF and anti-CCP', 'Rheumatoid vasculitis elsewhere (digital gangrene, sensorimotor neuropathy)'],
+    imaging: ['Ascending aortic dilation/aneurysm; aortic root involvement'],
+    labs: ['RF, anti-CCP positive at high titer; elevated ESR/CRP'],
+    histology: 'Panmural lymphoplasmacytic infiltrate WITH rheumatoid granulomas (palisading histiocytes around fibrinoid necrosis) — the most specific finding.',
+    distribution: 'Ascending aorta and root.',
+    workup: ['Aortic CTA + echo; aggressive RA control with bDMARDs/tsDMARDs; consider surgical repair'],
+    citations: ['27']
+  },
+  spa: {
+    name: 'Spondyloarthritis Aortitis',
+    abbrev: 'SpA',
+    category: 'autoimmune',
+    categoryLabel: 'Systemic immune',
+    blurb: 'AS, PsA, ReA, IBD-associated arthritis: aortic root dilation with AR via adventitial scarring.',
+    redFlags: ['Long-standing inflammatory back pain, sacroiliitis', 'HLA-B27 positive', 'Aortic regurgitation (2–10% of long-standing AS)', 'Conduction abnormalities (AV block) — same fibrotic process', 'Anterior uveitis, IBD, psoriasis, dactylitis'],
+    imaging: ['Aortic root dilation with AR; thickening of aortic root and proximal mitral valve ("subaortic bump")'],
+    labs: ['HLA-B27; ESR/CRP variable'],
+    histology: 'Adventitial scarring, medial fibrosis, lymphoplasmacytic infiltrate; not granulomatous.',
+    distribution: 'Aortic root predominantly.',
+    workup: ['Echocardiography (TTE/TEE) for AR; MRI sacroiliac joints; HLA-B27; ECG for AV block'],
+    citations: ['28']
+  },
+  aav: {
+    name: 'ANCA-associated Vasculitis',
+    abbrev: 'AAV',
+    category: 'autoimmune',
+    categoryLabel: 'Systemic immune',
+    blurb: 'GPA/MPA/EGPA rarely cause aortitis; usually peri-aortic mass.',
+    redFlags: ['Sinonasal disease (saddle nose, septal perforation), pulmonary nodules with cavitation, RPGN', 'Eosinophilia, asthma, sinusitis (EGPA)', 'Mononeuritis multiplex', 'Pauci-immune crescentic glomerulonephritis on biopsy', 'PR3-ANCA (GPA) or MPO-ANCA (MPA, EGPA)'],
+    imaging: ['Peri-aortic mass; rare aortic wall involvement'],
+    labs: ['ANCA (PR3 or MPO); urinalysis with active sediment; anti-GBM if mixed phenotype'],
+    histology: 'Necrotizing pauci-immune vasculitis with leukocytoclastic features; granulomas in GPA/EGPA.',
+    distribution: 'Variable; medium-vessel predominant.',
+    workup: ['ANCA testing, urinalysis, kidney biopsy if RPGN; CT chest/sinus; manage per ACR 2021'],
+    citations: ['29']
+  },
+  pan: {
+    name: 'Polyarteritis Nodosa',
+    abbrev: 'PAN',
+    category: 'autoimmune',
+    categoryLabel: 'Systemic immune',
+    blurb: 'Necrotizing medium-vessel vasculitis; classic PAN spares the aorta — DADA2 in the differential.',
+    redFlags: ['Mononeuritis multiplex, livedo, testicular pain, mesenteric/renal microaneurysms', 'HBV association (~7% globally)', 'IF young-onset PAN, livedo, strokes → think DADA2 (test ADA2 enzyme + sequencing)'],
+    imaging: ['Microaneurysms on visceral angiography (renal, mesenteric, hepatic); aorta typically spared'],
+    labs: ['HBV serology; ADA2 enzyme level + sequencing if young-onset; ANCA negative'],
+    histology: 'Segmental fibrinoid necrosis of medium-sized arteries with mixed inflammatory infiltrate.',
+    distribution: 'Medium-sized muscular arteries; rarely aortic ostia.',
+    workup: ['HBV serology, mesenteric/renal angiography, sural nerve or muscle biopsy, ADA2 if young'],
+    citations: ['30']
+  },
+  dada2: {
+    name: 'DADA2 (ADA2 Deficiency)',
+    abbrev: 'DADA2',
+    category: 'monogenic',
+    categoryLabel: 'Monogenic',
+    blurb: 'Biallelic ADA2 mutation: childhood-onset PAN-like vasculopathy with strokes and immunodeficiency.',
+    redFlags: ['Childhood/adolescent onset (rare adult presentation)', 'Recurrent lacunar strokes — pathognomonic', 'Livedo racemosa, fever, polyarteritis-like vasculitis', 'Hypogammaglobulinemia, cytopenias, pure red cell aplasia', 'Family history (autosomal recessive)', 'Anti-TNF prevents strokes; antiplatelets/anticoagulants relatively contraindicated'],
+    imaging: ['Lacunar strokes on brain MRI; mesenteric/visceral microaneurysms'],
+    labs: ['Plasma ADA2 enzyme activity (markedly reduced); biallelic ADA2 (formerly CECR1) mutations; immunoglobulins low'],
+    histology: 'Necrotizing medium-vessel vasculitis (PAN-like).',
+    distribution: 'Cerebral small vessels, medium-sized muscular arteries; aorta less common.',
+    workup: ['ADA2 enzyme activity (specialized labs); ADA2 gene sequencing; brain MRI; anti-TNF first-line'],
+    citations: ['31', '32']
+  },
+  vexas: {
+    name: 'VEXAS Syndrome',
+    abbrev: 'VEXAS',
+    category: 'monogenic',
+    categoryLabel: 'Monogenic',
+    blurb: 'Somatic UBA1 mutation in older men: refractory inflammation + cytopenias + vacuoles.',
+    redFlags: ['Older man (typically >50) with refractory autoinflammatory syndrome', 'Macrocytic anemia, often with thrombocytopenia or transformation to MDS', 'Cutaneous vasculitis (Sweet-like, neutrophilic dermatoses)', 'Recurrent fever, chondritis (RP-like), lung infiltrates, periorbital inflammation', 'Vacuoles in myeloid AND erythroid precursors on bone marrow aspirate', 'Steroid-dependent; no response to colchicine, conventional DMARDs', 'Aortitis/large-vessel vasculitis reported'],
+    imaging: ['Aortic wall thickening on CTA/PET in subset; pulmonary infiltrates'],
+    labs: ['Macrocytic anemia (MCV often >100 fL), thrombocytopenia', 'CRP markedly elevated; IL-6 elevated', 'Peripheral monocytopenia in subset', 'Diagnostic: somatic UBA1 mutation (most commonly p.Met41) on targeted sequencing of bone marrow or peripheral blood'],
+    histology: 'Bone marrow: cytoplasmic vacuoles in myeloid and erythroid precursors. Aortic histology nonspecific.',
+    distribution: 'Aorta and large branches in subset; multisystem.',
+    workup: ['CBC with peripheral smear, bone marrow with attention to vacuoles', 'UBA1 sequencing (Sanger or targeted NGS) on peripheral blood or bone marrow', 'Whole-body imaging for vasculitis mapping', 'Hematology co-management — high MDS/AML risk', 'JAK inhibitors, IL-6 blockade, allogeneic HSCT case-by-case'],
+    citations: ['33', '34']
+  },
+  fmf: {
+    name: 'FMF / Other Monogenic Autoinflammatory',
+    abbrev: 'FMF',
+    category: 'monogenic',
+    categoryLabel: 'Monogenic',
+    blurb: 'FMF, TRAPS, HIDS/MKD, HA20, NOD2/Blau — rare but reported aortic involvement.',
+    redFlags: ['FMF: recurrent serositis (peritonitis, pleuritis), Mediterranean ancestry, MEFV mutations, AA amyloidosis risk', 'TRAPS: longer fever attacks, periorbital edema, migrating myalgia, TNFRSF1A mutation', 'HIDS/MKD: childhood-onset, cervical adenopathy, abdominal pain, MVK mutation, elevated mevalonate', 'HA20 (TNFAIP3 LOF): Behçet-like + autoimmunity in children', 'NOD2/Blau: childhood granulomatous arthritis + uveitis + dermatitis'],
+    imaging: ['Heterogeneous; vasculitis is rare and varies by syndrome'],
+    labs: ['Targeted gene panel: MEFV, TNFRSF1A, MVK, NLRP3, NOD2, TNFAIP3'],
+    histology: 'Variable; neutrophilic in FMF/TRAPS; granulomatous in Blau.',
+    distribution: 'Variable.',
+    workup: ['Family history, ethnicity, attack pattern; targeted autoinflammatory gene panel; AA amyloid screening (proteinuria)'],
+    citations: ['35']
+  },
+  infectious: {
+    name: 'Bacterial (Mycotic) Aortitis',
+    abbrev: 'Inf',
+    category: 'infectious',
+    categoryLabel: 'Infectious',
+    blurb: 'Staphylococcus aureus and non-typhi Salmonella dominate; rapidly fatal if missed.',
+    redFlags: ['Fever + back/abdominal/chest pain + positive blood cultures', 'Saccular (not fusiform) pseudoaneurysm with periaortic gas, fluid, or stranding', 'Rapid expansion on serial imaging (days to weeks)', 'Recent bacteremia, endocarditis, IV drug use, prosthetic devices, immunosuppression', 'Atherosclerotic abdominal aorta seeded hematogenously', 'STEROIDS BEFORE EXCLUDING INFECTION CAN BE FATAL'],
+    imaging: ['Saccular pseudoaneurysm, eccentric outpouching', 'Periaortic gas (highly specific), fluid collection, abscess', 'Adjacent vertebral osteomyelitis or psoas abscess (Salmonella)', 'FDG-PET focal intense uptake at site'],
+    labs: ['Blood cultures (multiple sets, before antibiotics); leukocytosis; markedly elevated CRP/procalcitonin; consider 16S rRNA on intraoperative tissue'],
+    histology: 'Suppurative inflammation with neutrophils, microabscesses, necrosis; gram stain and special stains.',
+    distribution: 'Infrarenal abdominal aorta most common (atherosclerotic seeding); thoracic in subset.',
+    workup: ['Multiple blood cultures BEFORE antibiotics', 'Empirical broad-spectrum antibiotics covering Staph, Strep, gram-negatives', 'Urgent vascular surgery consultation', 'CT-guided aspiration only if not surgical candidate', 'Tissue at surgery for culture, gram stain, AFB, fungal, 16S rRNA'],
+    citations: ['36']
+  },
+  syphilis: {
+    name: 'Syphilitic Aortitis',
+    abbrev: 'Syph',
+    category: 'infectious',
+    categoryLabel: 'Infectious',
+    blurb: 'Tertiary syphilis — re-emerging with HIV co-infection; classic ascending aorta involvement.',
+    redFlags: ['Latency 10–30 years from primary infection', 'Ascending aorta predominant (vs atherosclerotic infrarenal)', 'Aortic regurgitation, coronary ostial stenosis (angina, sudden death in young patients)', 'HIV co-infection accelerates disease', 'Extensive linear/curvilinear aortic wall calcification on CT — classic but late', '"Tree-bark" intima at autopsy'],
+    imaging: ['Saccular ascending aortic aneurysm', 'Linear calcification of ascending aorta on chest X-ray and CT', 'Coronary ostial stenosis on CTA', 'Aortic regurgitation on echo'],
+    labs: ['Treponemal: TPPA, FTA-ABS, EIA — remain reactive lifelong', 'Non-treponemal: RPR, VDRL — titers correlate with activity', 'CSF VDRL if neurologic features', 'HIV testing mandatory'],
+    histology: 'Obliterative endarteritis of vasa vasorum with plasmacytic infiltrate; medial scarring with patchy elastic fiber loss producing "tree-bark" intima; spirochetes on Warthin–Starry or silver stain.',
+    distribution: 'Ascending thoracic aorta (vasa vasorum density highest); aortic root.',
+    workup: ['Treponemal + non-treponemal serology', 'HIV testing', 'CSF examination if neurologic features', 'Echocardiography for AR; CTA for aneurysm + coronary ostia', 'High-dose IV penicillin G; surgical repair'],
+    citations: ['37', '38']
+  },
+  tb: {
+    name: 'Mycobacterial (Tuberculous) Aortitis',
+    abbrev: 'TB',
+    category: 'infectious',
+    categoryLabel: 'Infectious',
+    blurb: 'Direct extension from contiguous lymph nodes or vertebrae; can mimic Takayasu radiographically.',
+    redFlags: ['TB-endemic region or risk factors (HIV, immunosuppression, prior TB)', 'Contiguous spread from para-aortic lymph nodes, mediastinum, or Pott disease (vertebral TB)', 'Constitutional symptoms, night sweats, weight loss', 'Recent BCG instillation for bladder cancer (mycobacterial seeding)', 'May radiographically mimic TAK'],
+    imaging: ['Aortic wall thickening contiguous with lymph node or vertebral body lesion; saccular pseudoaneurysm; psoas abscess'],
+    labs: ['IGRA (Quantiferon, T-SPOT); sputum AFB if pulmonary; tissue PCR for M. tuberculosis; HIV testing'],
+    histology: 'Caseating granulomas with Langhans-type giant cells; AFB on Ziehl-Neelsen.',
+    distribution: 'Adjacent to TB foci — mediastinum, para-aortic nodes, spine.',
+    workup: ['IGRA, sputum AFB, chest CT for pulmonary TB', 'Spine MRI if back pain', 'Tissue at surgery for AFB, culture, MTB-PCR', 'Multidrug anti-TB therapy + surgical repair'],
+    citations: ['39']
+  },
+  fungal: {
+    name: 'Fungal Aortitis',
+    abbrev: 'Fung',
+    category: 'infectious',
+    categoryLabel: 'Infectious',
+    blurb: 'Candida, Aspergillus, Mucorales — typically immunocompromised hosts.',
+    redFlags: ['Profound immunosuppression (transplant, HSCT, hematologic malignancy, neutropenia, advanced HIV)', 'Indwelling devices, candidemia, fungemia', 'Mucor: diabetic ketoacidosis, deferoxamine, rapid tissue destruction', 'Aspergillus: prior aspergilloma, hematologic malignancy, voriconazole-resistant strains'],
+    imaging: ['Pseudoaneurysm, periaortic abscess; angio-invasive features in mucormycosis'],
+    labs: ['Blood cultures, beta-D-glucan, galactomannan, cryptococcal antigen; tissue PCR'],
+    histology: 'Hyphae in tissue (PAS, GMS); broad non-septate angle-of-90° hyphae = mucor; septate acute-angle = aspergillus; pseudohyphae + budding yeast = candida.',
+    distribution: 'Variable; often near indwelling lines or prior surgical sites.',
+    workup: ['Blood cultures, fungal markers, tissue with special stains, ID consultation, antifungals + surgery'],
+    citations: ['36']
+  },
+  qfever: {
+    name: 'Coxiella burnetii (Chronic Q Fever)',
+    abbrev: 'CQF',
+    category: 'infectious',
+    categoryLabel: 'Infectious',
+    blurb: 'Often missed cause of culture-negative aortitis and graft infection.',
+    redFlags: ['Rural exposure, livestock contact, raw milk', 'Pre-existing aortic aneurysm or graft', 'Culture-negative endocarditis features', 'Vague constitutional symptoms over months to years', 'Hepatitis with characteristic "fibrin ring" granulomas'],
+    imaging: ['Aortic aneurysm with adjacent inflammation; graft infection; vegetations on echo'],
+    labs: ['Phase I IgG antibody to Coxiella burnetii — titers >1:800 highly suggestive of chronic infection; PCR on tissue'],
+    histology: 'Lymphoplasmacytic infiltrate, sometimes with granulomas; organisms not visible on routine stains.',
+    distribution: 'Pre-existing aneurysm/graft sites.',
+    workup: ['Phase I/II antibody serology, blood and tissue PCR, prolonged doxycycline + hydroxychloroquine'],
+    citations: ['36']
+  },
+  brucella: {
+    name: 'Brucella / Other Zoonotic',
+    abbrev: 'Bruc',
+    category: 'infectious',
+    categoryLabel: 'Infectious',
+    blurb: 'Brucella, Bartonella, Tropheryma whipplei — rare causes worth searching in travel/exposure context.',
+    redFlags: ['Brucella: livestock exposure, unpasteurized dairy, undulating fever', 'Bartonella: cat exposure, culture-negative endocarditis with embolic features', 'Whipple disease: arthralgias, weight loss, malabsorption, neurologic features'],
+    imaging: ['Spondylodiscitis (Brucella); aneurysm in subset'],
+    labs: ['Brucella tube agglutination, blood cultures (prolonged); Bartonella IgG/IgM, PCR; T. whipplei PCR (small bowel, blood)'],
+    histology: 'Granulomatous (Brucella, Whipple); PAS+ macrophages in Whipple.',
+    distribution: 'Variable; spondylodiscitis-associated for Brucella.',
+    workup: ['Travel/exposure history, targeted serology and PCR'],
+    citations: ['36']
+  },
+  gcsf: {
+    name: 'G-CSF / Pegfilgrastim Aortitis',
+    abbrev: 'G-CSF',
+    category: 'drug',
+    categoryLabel: 'Drug-induced',
+    blurb: 'Increasingly recognized adverse effect, especially with long-acting pegfilgrastim.',
+    redFlags: ['Recent G-CSF or pegfilgrastim administration (median onset 10–14 days)', 'Female receiving taxane- or platinum-based chemotherapy', 'Fever, neck pain, chest/back pain, markedly elevated CRP', 'Aortic arch and supra-aortic branch involvement on CT', 'Long-acting pegfilgrastim higher risk than short-acting filgrastim', 'Often resolves with drug discontinuation alone; short-course steroids if symptomatic', 'Up to 60% of CT-diagnosed cases asymptomatic in screening series'],
+    imaging: ['Concentric wall thickening of aortic arch and supra-aortic branches; FDG uptake on PET; resolution within weeks of stopping drug'],
+    labs: ['Markedly elevated CRP (often >100 mg/L); leukocytosis (drug-related); blood cultures negative'],
+    histology: 'Limited tissue available; nonspecific lymphoplasmacytic adventitial inflammation when biopsied.',
+    distribution: 'Aortic arch and supra-aortic branches predominant.',
+    workup: ['Discontinue G-CSF', 'Short-course glucocorticoids if symptomatic', 'Surveillance CT until resolution', 'Avoid re-challenge; consider alternative G-CSF formulation if needed'],
+    citations: ['40', '41']
+  },
+  ici: {
+    name: 'Immune Checkpoint Inhibitor Aortitis',
+    abbrev: 'ICI',
+    category: 'drug',
+    categoryLabel: 'Drug-induced',
+    blurb: 'ipilimumab, nivolumab, pembrolizumab, atezolizumab, durvalumab — emerging cardiac and vascular irAEs.',
+    redFlags: ['Recent ICI initiation (median 3 months, range 1–33 months)', 'GCA-, PMR-, or isolated aortitis-like phenotype', 'Anti-CTLA-4 (ipilimumab) overrepresented for temporal arteritis in pharmacovigilance data', 'May coexist with other irAEs (myocarditis, hypophysitis, colitis)', 'Treatment: ICI hold + glucocorticoids ± tocilizumab'],
+    imaging: ['Aortic wall thickening with FDG uptake on PET; pattern resembles GCA or LV-GCA'],
+    labs: ['Markedly elevated CRP; consider ANCA, ANA to characterize concurrent irAE'],
+    histology: 'Lymphocytic-predominant infiltrate; granulomas reported.',
+    distribution: 'Aorta and supra-aortic branches.',
+    workup: ['Discontinue ICI, oncology multidisciplinary input', 'Glucocorticoids, tocilizumab in refractory or steroid-sparing context', 'Screen for concurrent irAEs (cardiac MRI, hormonal, GI)'],
+    citations: ['42', '43']
+  },
+  bcg: {
+    name: 'BCG-induced Mycotic Aortitis',
+    abbrev: 'BCG',
+    category: 'drug',
+    categoryLabel: 'Drug-induced',
+    blurb: 'Mycobacterial aortitis after intravesical BCG for bladder cancer.',
+    redFlags: ['History of intravesical BCG instillation for non-muscle-invasive bladder cancer', 'Onset months to years after BCG; constitutional symptoms', 'Saccular pseudoaneurysm, often abdominal aorta', 'AFB cultures usually negative; M. bovis BCG strain on PCR'],
+    imaging: ['Saccular pseudoaneurysm with periaortic inflammation/abscess'],
+    labs: ['IGRA may be positive (cross-reactivity); MTBC PCR with BCG strain identification'],
+    histology: 'Caseating or non-caseating granulomas; AFB rarely seen.',
+    distribution: 'Abdominal aorta most common.',
+    workup: ['MTBC PCR with strain typing on tissue; multi-drug anti-TB therapy (BCG is M. bovis — pyrazinamide ineffective); surgical repair'],
+    citations: ['44']
+  },
+  radiation: {
+    name: 'Radiation-induced Aortopathy',
+    abbrev: 'Rad',
+    category: 'other',
+    categoryLabel: 'Other',
+    blurb: 'Late vascular damage in field of prior radiation therapy.',
+    redFlags: ['Prior thoracic radiotherapy (lymphoma, breast, lung, head/neck)', 'Latency 5–25 years', 'Carotid stenosis, subclavian stenosis in neck/upper-mediastinal radiation fields', 'Pulmonary fibrosis, esophageal stricture in same field', 'Often accelerated atherosclerosis rather than true vasculitis'],
+    imaging: ['Wall thickening and stenosis confined to radiation field; coexisting radiation-induced changes'],
+    labs: ['Inflammatory markers usually normal'],
+    histology: 'Fibrosis, accelerated atherosclerosis, sometimes adventitial inflammation.',
+    distribution: 'Within prior radiation field.',
+    workup: ['Detailed radiation history with field reconstruction; CTA mapping; vascular surgery for symptomatic stenoses'],
+    citations: ['45']
+  },
+  graft: {
+    name: 'Aortic Graft Infection / Post-procedural',
+    abbrev: 'Graft',
+    category: 'other',
+    categoryLabel: 'Other',
+    blurb: 'Infected aortic prosthesis, post-EVAR endograft infection, or post-surgical inflammation.',
+    redFlags: ['Prior aortic graft, endovascular stent-graft, or aortic surgery', 'Late presentation with fever, back pain, sepsis', 'Aortoenteric fistula (GI bleed + graft history)', 'Periaortic gas, fluid, abscess on CT', 'Coxiella, Staph epidermidis, Staph aureus, gram-negatives'],
+    imaging: ['Periaortic gas, fluid, fluid collections, fistulous communication with bowel; FDG-PET focal uptake at graft'],
+    labs: ['Multiple blood cultures; Coxiella and other targeted serologies; tissue/sonicate cultures from explanted graft'],
+    histology: 'Suppurative or chronic inflammation around graft material.',
+    distribution: 'At graft site.',
+    workup: ['Multidisciplinary vascular surgery + ID; CT/PET, blood cultures, often graft explantation with extra-anatomic bypass'],
+    citations: ['36']
+  }
+};
+
+// ============================================================
+// CATEGORY METADATA
+// ============================================================
+const CATEGORIES = {
+  lvv: {
+    label: 'Large-vessel vasculitis',
+    accent: '#8b3a2f',
+    short: 'LVV'
+  },
+  fibroinflammatory: {
+    label: 'Fibro-inflammatory',
+    accent: '#6b5b3a',
+    short: 'Fibrotic'
+  },
+  autoimmune: {
+    label: 'Systemic immune-mediated',
+    accent: '#4a5d3a',
+    short: 'Immune'
+  },
+  monogenic: {
+    label: 'Monogenic / autoinflammatory',
+    accent: '#3a5066',
+    short: 'Genetic'
+  },
+  infectious: {
+    label: 'Infectious',
+    accent: '#7a2e2e',
+    short: 'Infection'
+  },
+  drug: {
+    label: 'Drug- / treatment-induced',
+    accent: '#5a4063',
+    short: 'Drug'
+  },
+  other: {
+    label: 'Other',
+    accent: '#4a4a4a',
+    short: 'Other'
+  }
+};
+
+// ============================================================
+// CLINICAL FEATURES → ETIOLOGY WEIGHTS
+// ============================================================
+const FEATURE_GROUPS = [{
+  label: 'Demographics',
+  icon: Users,
+  features: [{
+    id: 'age50',
+    label: 'Age ≥ 50',
+    weights: {
+      gca: 6,
+      lvgca: 6,
+      cia: 3,
+      igg4: 3,
+      ecd: 3,
+      vexas: 5,
+      syphilis: 2
+    }
+  }, {
+    id: 'ageU40',
+    label: 'Age < 40',
+    weights: {
+      tak: 6,
+      behcet: 4,
+      dada2: 5,
+      cogan: 3,
+      fmf: 2
+    }
+  }, {
+    id: 'pediatric',
+    label: 'Pediatric / adolescent onset',
+    weights: {
+      dada2: 8,
+      fmf: 4,
+      tak: 3,
+      cogan: 2
+    }
+  }, {
+    id: 'female',
+    label: 'Female',
+    weights: {
+      gca: 2,
+      tak: 4,
+      cia: 2,
+      gcsf: 4
+    }
+  }, {
+    id: 'male',
+    label: 'Male',
+    weights: {
+      igg4: 3,
+      ecd: 3,
+      vexas: 6,
+      spa: 2,
+      syphilis: 2
+    }
+  }, {
+    id: 'asianTurkish',
+    label: 'Asian / Turkish / Middle Eastern / Latin',
+    weights: {
+      tak: 5,
+      behcet: 5,
+      fmf: 3
+    }
+  }, {
+    id: 'african',
+    label: 'African / African-American',
+    weights: {
+      sarcoid: 4
+    }
+  }, {
+    id: 'mediterranean',
+    label: 'Mediterranean ancestry',
+    weights: {
+      fmf: 6,
+      behcet: 4
+    }
+  }, {
+    id: 'familyHx',
+    label: 'Family history of vasculitis / autoinflammation',
+    weights: {
+      dada2: 6,
+      fmf: 5,
+      tak: 1
+    }
+  }]
+}, {
+  label: 'Systemic / cranial symptoms',
+  icon: AlertTriangle,
+  features: [{
+    id: 'headache',
+    label: 'New temporal headache / scalp tenderness',
+    weights: {
+      gca: 7
+    }
+  }, {
+    id: 'jawClaud',
+    label: 'Jaw claudication',
+    weights: {
+      gca: 8
+    }
+  }, {
+    id: 'visionLoss',
+    label: 'Sudden visual loss / amaurosis',
+    weights: {
+      gca: 8
+    }
+  }, {
+    id: 'pmr',
+    label: 'Polymyalgia rheumatica symptoms',
+    weights: {
+      gca: 6,
+      vexas: 3,
+      ici: 2
+    }
+  }, {
+    id: 'limbClaud',
+    label: 'Limb claudication / pulse deficit / BP differential',
+    weights: {
+      tak: 8,
+      lvgca: 6
+    }
+  }, {
+    id: 'constSymp',
+    label: 'Constitutional (fever, weight loss, night sweats)',
+    weights: {
+      gca: 4,
+      lvgca: 4,
+      tak: 3,
+      infectious: 5,
+      tb: 5,
+      vexas: 4,
+      ecd: 3,
+      ici: 2
+    }
+  }, {
+    id: 'feverHigh',
+    label: 'High fever with bacteremia features',
+    weights: {
+      infectious: 8,
+      fungal: 5,
+      qfever: 3
+    }
+  }]
+}, {
+  label: 'Mucocutaneous / ENT / eye',
+  icon: AlertTriangle,
+  features: [{
+    id: 'oralUlcers',
+    label: 'Recurrent oral ulcers',
+    weights: {
+      behcet: 8,
+      fmf: 1
+    }
+  }, {
+    id: 'genitalUlcers',
+    label: 'Genital ulcers',
+    weights: {
+      behcet: 8
+    }
+  }, {
+    id: 'uveitis',
+    label: 'Uveitis / panuveitis',
+    weights: {
+      behcet: 6,
+      sarcoid: 4,
+      spa: 3,
+      fmf: 1
+    }
+  }, {
+    id: 'auricChond',
+    label: 'Auricular / nasal chondritis (saddle nose)',
+    weights: {
+      rp: 9,
+      vexas: 4
+    }
+  }, {
+    id: 'intKeratitis',
+    label: 'Interstitial keratitis',
+    weights: {
+      cogan: 9,
+      syphilis: 3
+    }
+  }, {
+    id: 'audioVest',
+    label: 'Audiovestibular dysfunction (sensorineural HL, vertigo)',
+    weights: {
+      cogan: 8,
+      rp: 4,
+      syphilis: 2
+    }
+  }, {
+    id: 'livedo',
+    label: 'Livedo racemosa',
+    weights: {
+      dada2: 7,
+      pan: 6
+    }
+  }, {
+    id: 'sweet',
+    label: 'Sweet-like / neutrophilic dermatosis',
+    weights: {
+      vexas: 6
+    }
+  }, {
+    id: 'erythNod',
+    label: 'Erythema nodosum / lupus pernio',
+    weights: {
+      sarcoid: 5,
+      behcet: 2
+    }
+  }, {
+    id: 'rheumNod',
+    label: 'Rheumatoid nodules / digital gangrene',
+    weights: {
+      ra: 6
+    }
+  }, {
+    id: 'psoriasis',
+    label: 'Psoriasis / dactylitis / IBD',
+    weights: {
+      spa: 6
+    }
+  }, {
+    id: 'sinusitis',
+    label: 'Sinonasal disease / saddle nose (granulomatous)',
+    weights: {
+      aav: 7,
+      rp: 3
+    }
+  }]
+}, {
+  label: 'Visceral / neurologic',
+  icon: AlertTriangle,
+  features: [{
+    id: 'serositis',
+    label: 'Recurrent serositis (peritonitis, pleuritis)',
+    weights: {
+      fmf: 9
+    }
+  }, {
+    id: 'lacStrokes',
+    label: 'Recurrent lacunar strokes (young)',
+    weights: {
+      dada2: 9
+    }
+  }, {
+    id: 'mononeurMx',
+    label: 'Mononeuritis multiplex',
+    weights: {
+      aav: 5,
+      pan: 6
+    }
+  }, {
+    id: 'sacroileitis',
+    label: 'Inflammatory back pain / sacroiliitis',
+    weights: {
+      spa: 8
+    }
+  }, {
+    id: 'erosiveRA',
+    label: 'Long-standing erosive seropositive RA',
+    weights: {
+      ra: 8
+    }
+  }, {
+    id: 'pulmInf',
+    label: 'Pulmonary infiltrates / hilar adenopathy',
+    weights: {
+      sarcoid: 6,
+      aav: 3,
+      tb: 4
+    }
+  }, {
+    id: 'cavitating',
+    label: 'Cavitating pulmonary nodules',
+    weights: {
+      aav: 7,
+      tb: 3
+    }
+  }, {
+    id: 'asthmaEos',
+    label: 'Asthma + eosinophilia',
+    weights: {
+      aav: 7
+    }
+  }, {
+    id: 'rpgn',
+    label: 'Acute kidney injury / pauci-immune GN',
+    weights: {
+      aav: 8
+    }
+  }, {
+    id: 'di',
+    label: 'Diabetes insipidus / exophthalmos',
+    weights: {
+      ecd: 8
+    }
+  }, {
+    id: 'boneDiaph',
+    label: 'Symmetric long-bone diaphyseal pain',
+    weights: {
+      ecd: 8
+    }
+  }, {
+    id: 'bilHydro',
+    label: 'Bilateral hydronephrosis from RPF',
+    weights: {
+      rpf: 8,
+      igg4: 6
+    }
+  }, {
+    id: 'autoPanc',
+    label: 'Autoimmune pancreatitis / Mikulicz',
+    weights: {
+      igg4: 9
+    }
+  }, {
+    id: 'hbv',
+    label: 'HBV infection',
+    weights: {
+      pan: 7
+    }
+  }, {
+    id: 'hiv',
+    label: 'HIV co-infection / advanced immunosuppression',
+    weights: {
+      syphilis: 4,
+      fungal: 4,
+      tb: 4,
+      infectious: 3
+    }
+  }, {
+    id: 'malabsorption',
+    label: 'Malabsorption / chronic arthralgias / CNS',
+    weights: {
+      brucella: 5
+    }
+  }]
+}, {
+  label: 'Iatrogenic / exposure history',
+  icon: AlertTriangle,
+  features: [{
+    id: 'recentGCSF',
+    label: 'Recent G-CSF or pegfilgrastim (10–14 d)',
+    weights: {
+      gcsf: 10
+    }
+  }, {
+    id: 'recentICI',
+    label: 'Recent immune checkpoint inhibitor (1–6 mo)',
+    weights: {
+      ici: 10
+    }
+  }, {
+    id: 'intravesicalBCG',
+    label: 'Recent intravesical BCG',
+    weights: {
+      bcg: 10
+    }
+  }, {
+    id: 'aorticGraft',
+    label: 'Prior aortic graft / EVAR / aortic surgery',
+    weights: {
+      graft: 9
+    }
+  }, {
+    id: 'priorRT',
+    label: 'Prior thoracic / mediastinal radiation',
+    weights: {
+      radiation: 9
+    }
+  }, {
+    id: 'recentBact',
+    label: 'Recent bacteremia / endocarditis / IVDU / device',
+    weights: {
+      infectious: 8,
+      fungal: 3
+    }
+  }, {
+    id: 'livestock',
+    label: 'Livestock / unpasteurized dairy exposure',
+    weights: {
+      brucella: 6,
+      qfever: 7
+    }
+  }, {
+    id: 'tbExposure',
+    label: 'TB-endemic origin / exposure',
+    weights: {
+      tb: 6
+    }
+  }, {
+    id: 'immunosuppr',
+    label: 'Profound immunosuppression / neutropenia',
+    weights: {
+      fungal: 7,
+      infectious: 3
+    }
+  }]
+}, {
+  label: 'Imaging features',
+  icon: ImageIcon,
+  features: [{
+    id: 'ascAorta',
+    label: 'Ascending aorta involvement',
+    weights: {
+      gca: 5,
+      cia: 6,
+      rp: 5,
+      ra: 4,
+      spa: 5,
+      cogan: 5,
+      syphilis: 7
+    }
+  }, {
+    id: 'archBranches',
+    label: 'Arch + supra-aortic branches',
+    weights: {
+      tak: 7,
+      lvgca: 7,
+      gca: 4,
+      gcsf: 6,
+      ici: 5
+    }
+  }, {
+    id: 'abdAorta',
+    label: 'Infrarenal abdominal aorta',
+    weights: {
+      igg4: 7,
+      behcet: 6,
+      infectious: 6,
+      rpf: 8
+    }
+  }, {
+    id: 'saccularPSA',
+    label: 'Saccular pseudoaneurysm',
+    weights: {
+      infectious: 9,
+      behcet: 6,
+      syphilis: 4,
+      bcg: 6,
+      fungal: 4,
+      tb: 3
+    }
+  }, {
+    id: 'periaorticGas',
+    label: 'Periaortic gas / fluid / abscess',
+    weights: {
+      infectious: 10,
+      fungal: 4,
+      graft: 8
+    }
+  }, {
+    id: 'coatedAorta',
+    label: '"Coated aorta" — circumferential periaortic mantle',
+    weights: {
+      ecd: 10,
+      igg4: 6,
+      rpf: 5
+    }
+  }, {
+    id: 'circWallThick',
+    label: 'Long, smooth concentric wall thickening',
+    weights: {
+      tak: 6,
+      lvgca: 5,
+      gca: 4,
+      sarcoid: 4
+    }
+  }, {
+    id: 'pulmAneurysm',
+    label: 'Pulmonary artery aneurysm',
+    weights: {
+      behcet: 10
+    }
+  }, {
+    id: 'linearCalcif',
+    label: 'Linear ascending aortic calcification',
+    weights: {
+      syphilis: 7
+    }
+  }, {
+    id: 'periaorticMass',
+    label: 'Tumefactive periaortic mass',
+    weights: {
+      igg4: 7,
+      rpf: 6,
+      ecd: 5
+    }
+  }, {
+    id: 'rapidExpansion',
+    label: 'Rapid expansion (days–weeks)',
+    weights: {
+      infectious: 8,
+      fungal: 4
+    }
+  }, {
+    id: 'fdgPositive',
+    label: 'FDG-PET hypermetabolic aortic uptake',
+    weights: {
+      gca: 4,
+      lvgca: 5,
+      tak: 4,
+      igg4: 3,
+      sarcoid: 3,
+      infectious: 3,
+      ici: 3,
+      gcsf: 4
+    }
+  }, {
+    id: 'multipleAneurysms',
+    label: 'Multiple ascending aneurysms',
+    weights: {
+      rp: 7
+    }
+  }, {
+    id: 'spineAdjLN',
+    label: 'Adjacent spondylodiscitis / lymphadenopathy',
+    weights: {
+      tb: 8,
+      brucella: 6
+    }
+  }, {
+    id: 'hairyKidney',
+    label: '"Hairy kidney" — perirenal infiltration',
+    weights: {
+      ecd: 9
+    }
+  }]
+}, {
+  label: 'Laboratory / molecular',
+  icon: FlaskConical,
+  features: [{
+    id: 'highESR',
+    label: 'Markedly elevated ESR/CRP',
+    weights: {
+      gca: 4,
+      lvgca: 4,
+      tak: 3,
+      infectious: 4,
+      vexas: 4,
+      gcsf: 4,
+      ici: 3
+    }
+  }, {
+    id: 'positiveBC',
+    label: 'Positive blood cultures',
+    weights: {
+      infectious: 10,
+      fungal: 5
+    }
+  }, {
+    id: 'rprPositive',
+    label: 'Positive RPR / VDRL / treponemal serology',
+    weights: {
+      syphilis: 10
+    }
+  }, {
+    id: 'igraPositive',
+    label: 'Positive IGRA / Quantiferon',
+    weights: {
+      tb: 9,
+      bcg: 4
+    }
+  }, {
+    id: 'igg4High',
+    label: 'Serum IgG4 > 135 mg/dL',
+    weights: {
+      igg4: 7
+    }
+  }, {
+    id: 'rfCcp',
+    label: 'High-titer RF + anti-CCP',
+    weights: {
+      ra: 8
+    }
+  }, {
+    id: 'ancaPos',
+    label: 'Positive ANCA (PR3 or MPO)',
+    weights: {
+      aav: 9
+    }
+  }, {
+    id: 'hlaB27',
+    label: 'HLA-B27 positive',
+    weights: {
+      spa: 8
+    }
+  }, {
+    id: 'hlaB51',
+    label: 'HLA-B51 positive',
+    weights: {
+      behcet: 6
+    }
+  }, {
+    id: 'aceHigh',
+    label: 'Elevated ACE / sIL-2R',
+    weights: {
+      sarcoid: 6
+    }
+  }, {
+    id: 'macroAnemia',
+    label: 'Macrocytic anemia (MCV > 100 fL)',
+    weights: {
+      vexas: 9
+    }
+  }, {
+    id: 'cytopenias',
+    label: 'Cytopenias / MDS-like',
+    weights: {
+      vexas: 8
+    }
+  }, {
+    id: 'hypogamma',
+    label: 'Hypogammaglobulinemia / immunodeficiency',
+    weights: {
+      dada2: 7
+    }
+  }, {
+    id: 'lowADA2',
+    label: 'Reduced ADA2 enzyme activity',
+    weights: {
+      dada2: 10
+    }
+  }, {
+    id: 'uba1Mut',
+    label: 'Somatic UBA1 mutation',
+    weights: {
+      vexas: 10
+    }
+  }, {
+    id: 'mefvMut',
+    label: 'MEFV / TNFRSF1A / MVK mutation',
+    weights: {
+      fmf: 10
+    }
+  }, {
+    id: 'qFevSero',
+    label: 'Coxiella phase I IgG > 1:800',
+    weights: {
+      qfever: 10
+    }
+  }]
+}, {
+  label: 'Histology',
+  icon: Microscope,
+  features: [{
+    id: 'granulomaGiant',
+    label: 'Granulomas with giant cells (non-caseating)',
+    weights: {
+      gca: 8,
+      lvgca: 8,
+      tak: 8,
+      sarcoid: 7,
+      cogan: 4
+    }
+  }, {
+    id: 'caseating',
+    label: 'Caseating granulomas',
+    weights: {
+      tb: 10,
+      bcg: 6
+    }
+  }, {
+    id: 'storiform',
+    label: 'Storiform fibrosis + IgG4+ plasma cells (>50/HPF, ratio >50%)',
+    weights: {
+      igg4: 10
+    }
+  }, {
+    id: 'foamyCD68',
+    label: 'Foamy CD68+/CD1a- histiocytes (Touton giant cells)',
+    weights: {
+      ecd: 10
+    }
+  }, {
+    id: 'suppurative',
+    label: 'Suppurative / neutrophilic with microabscesses',
+    weights: {
+      infectious: 9,
+      fungal: 5
+    }
+  }, {
+    id: 'rheumGran',
+    label: 'Rheumatoid granulomas (palisading)',
+    weights: {
+      ra: 10
+    }
+  }, {
+    id: 'treeBark',
+    label: '"Tree-bark" intima with plasmacytic infiltrate',
+    weights: {
+      syphilis: 10
+    }
+  }, {
+    id: 'transNeutrophil',
+    label: 'Transmural neutrophilic vasculitis (vasa vasorum)',
+    weights: {
+      behcet: 9
+    }
+  }, {
+    id: 'fibrinoidNec',
+    label: 'Fibrinoid necrosis of medium vessels',
+    weights: {
+      pan: 8,
+      aav: 7,
+      dada2: 6
+    }
+  }, {
+    id: 'vacuolesBM',
+    label: 'Vacuoles in myeloid + erythroid precursors',
+    weights: {
+      vexas: 10
+    }
+  }, {
+    id: 'incidental',
+    label: 'Incidental finding at aneurysm surgery',
+    weights: {
+      cia: 9
+    }
+  }]
+}];
+
+// ============================================================
+// REFERENCES
+// ============================================================
+const REFERENCES = [{
+  id: '1',
+  text: 'Jennette JC, Falk RJ, Bacon PA, et al. 2012 revised International Chapel Hill Consensus Conference Nomenclature of Vasculitides. Arthritis Rheum. 2013;65:1-11. doi:10.1002/art.37715'
+}, {
+  id: '2',
+  text: 'Ponte C, Grayson PC, Robson JC, et al. 2022 ACR/EULAR classification criteria for giant cell arteritis. Ann Rheum Dis. 2022;81:1647-1653. doi:10.1136/ard-2022-223480'
+}, {
+  id: '3',
+  text: 'Prieto-González S, Arguis P, García-Martínez A, et al. Large vessel involvement in biopsy-proven GCA: prospective study using CT angiography. Ann Rheum Dis. 2012;71:1170-1176. PMID:22267328'
+}, {
+  id: '4',
+  text: 'Kermani TA, Warrington KJ, Crowson CS, et al. Large-vessel involvement in GCA: a population-based cohort study. Ann Rheum Dis. 2013;72:1989-1994. PMID:23253927'
+}, {
+  id: '5',
+  text: 'Stone JH, Tuckwell K, Dimonaco S, et al. Trial of tocilizumab in giant-cell arteritis (GiACTA). N Engl J Med. 2017;377:317-328. doi:10.1056/NEJMoa1613849'
+}, {
+  id: '6',
+  text: 'Hellmich B, Agueda A, Monti S, et al. 2018 update of the EULAR recommendations for management of large vessel vasculitis. Ann Rheum Dis. 2020;79:19-30. PMID:31270110'
+}, {
+  id: '7',
+  text: 'Misra R, Danda D, Rajappa SM, et al. Development and initial validation of the Indian Takayasu Clinical Activity Score (ITAS2010). Rheumatology. 2013;52:1795-1801.'
+}, {
+  id: '8',
+  text: 'Hata A, Noda M, Moriwaki R, Numano F. Angiographic findings of Takayasu arteritis: new classification. Int J Cardiol. 1996;54(Suppl):S155-163.'
+}, {
+  id: '9',
+  text: 'Rojo-Leyva F, Ratliff NB, Cosgrove DM, Hoffman GS. Study of 52 patients with idiopathic aortitis from a cohort of 1204 surgical cases. Arthritis Rheum. 2000;43:901-907. PMID:10765937'
+}, {
+  id: '10',
+  text: 'Miller DV, Isotalo PA, Weyand CM, et al. Surgical pathology of noninfectious ascending aortitis: a study of 45 cases with emphasis on an isolated variant. Am J Surg Pathol. 2006;30:1150-1158. PMID:16931960'
+}, {
+  id: '11',
+  text: 'Mayer KE, Walsh M, Khalidi N, et al. Long-term clinical and radiographic outcomes in patients with clinically isolated aortitis. ACR Open Rheumatol. 2022;4:1013-1020. PMID:36250477'
+}, {
+  id: '12',
+  text: 'Stone JH, Khosroshahi A, Deshpande V, et al. IgG4-related systemic disease accounts for a significant proportion of thoracic lymphoplasmacytic aortitis cases. Arthritis Care Res. 2010;62:316-322.'
+}, {
+  id: '13',
+  text: 'Kasashima S, Zen Y, Kawashima A, et al. A new clinicopathological entity of IgG4-related inflammatory abdominal aortic aneurysm. J Vasc Surg. 2009;49:1264-1271.'
+}, {
+  id: '14',
+  text: 'Deshpande V, Zen Y, Chan JK, et al. Consensus statement on the pathology of IgG4-related disease. Mod Pathol. 2012;25:1181-1192.'
+}, {
+  id: '15',
+  text: 'Perugino CA, Wallace ZS, Meyersohn N, et al. Large vessel involvement by IgG4-related disease. Medicine (Baltimore). 2016;95:e3344.'
+}, {
+  id: '16',
+  text: 'Goyal G, Heaney ML, Collin M, et al. Erdheim-Chester disease: consensus recommendations for evaluation, diagnosis, and treatment in the molecular era. Blood. 2020;135:1929-1945. PMID:32187362'
+}, {
+  id: '17',
+  text: 'Haroche J, Charlotte F, Arnaud L, et al. High prevalence of BRAFV600E mutations in Erdheim-Chester disease but not in other non-Langerhans cell histiocytoses. Blood. 2012;120:2700-2703.'
+}, {
+  id: '18',
+  text: 'Diamond EL, Durham BH, Ulaner GA, et al. Efficacy of MEK inhibition in patients with histiocytic neoplasms. Nature. 2019;567:521-524.'
+}, {
+  id: '19',
+  text: 'Vaglio A, Palmisano A, Alberici F, et al. Prednisone versus tamoxifen in patients with idiopathic retroperitoneal fibrosis: a randomised controlled trial. Lancet. 2011;378:338-346.'
+}, {
+  id: '20',
+  text: 'Saadoun D, Asli B, Wechsler B, et al. Long-term outcome of arterial lesions in Behçet disease: a series of 101 patients. Medicine (Baltimore). 2012;91:18-24.'
+}, {
+  id: '21',
+  text: 'Hatemi G, Christensen R, Bang D, et al. 2018 update of the EULAR recommendations for the management of Behçet syndrome. Ann Rheum Dis. 2018;77:808-818.'
+}, {
+  id: '22',
+  text: 'Espitia O, Néel A, Leux C, et al. Cogan syndrome: characteristics, outcome and treatment in a French nationwide retrospective study. Arthritis Care Res. 2014;66:1083-1089.'
+}, {
+  id: '23',
+  text: 'Le Besnerais M, Arnaud L, Boutémy J, et al. Aortic involvement in relapsing polychondritis. Joint Bone Spine. 2018;85:345-351. PMID:28528280'
+}, {
+  id: '24',
+  text: 'Dib C, Moustafa SE, Mookadam M, et al. Surgical treatment of the cardiac manifestations of relapsing polychondritis. Mayo Clin Proc. 2006;81:772-776.'
+}, {
+  id: '25',
+  text: 'Weiler V, Redtenbacher S, Bancher C, et al. Concurrence of sarcoidosis and aortitis: case report and review of the literature. Ann Rheum Dis. 2000;59:850-853. PMID:11053059'
+}, {
+  id: '26',
+  text: 'Fernandes SR, Singsen BH, Hoffman GS. Sarcoidosis and systemic vasculitis. Semin Arthritis Rheum. 2000;30:33-46. PMID:10966211'
+}, {
+  id: '27',
+  text: 'Gravallese EM, Corson JM, Coblyn JS, et al. Rheumatoid aortitis: a rarely recognized but clinically significant entity. Medicine (Baltimore). 1989;68:95-106. PMID:2921941'
+}, {
+  id: '28',
+  text: 'Bulkley BH, Roberts WC. Ankylosing spondylitis and aortic regurgitation: description of the characteristic cardiovascular lesion from study of eight necropsy patients. Circulation. 1973;48:1014-1027.'
+}, {
+  id: '29',
+  text: 'Chung SA, Langford CA, Maz M, et al. 2021 ACR/VF guideline for the management of ANCA-associated vasculitis. Arthritis Rheumatol. 2021;73:1366-1383.'
+}, {
+  id: '30',
+  text: 'Pagnoux C, Mahr A, Cohen P, Guillevin L. Presentation and outcome of gastrointestinal involvement in systemic necrotizing vasculitides. Medicine (Baltimore). 2005;84:115-128.'
+}, {
+  id: '31',
+  text: 'Zhou Q, Yang D, Ombrello AK, et al. Early-onset stroke and vasculopathy associated with mutations in ADA2. N Engl J Med. 2014;370:911-920.'
+}, {
+  id: '32',
+  text: 'Navon Elkan P, Pierce SB, Segel R, et al. Mutant adenosine deaminase 2 in a polyarteritis nodosa vasculopathy. N Engl J Med. 2014;370:921-931. PMID:24552285'
+}, {
+  id: '33',
+  text: 'Beck DB, Ferrada MA, Sikora KA, et al. Somatic mutations in UBA1 and severe adult-onset autoinflammatory disease. N Engl J Med. 2020;383:2628-2638. PMID:33108101'
+}, {
+  id: '34',
+  text: 'Ferrada MA, Sikora KA, Luo Y, et al. Somatic mutations in UBA1 define a distinct subset of relapsing polychondritis patients with VEXAS. Arthritis Rheumatol. 2021;73:1886-1895.'
+}, {
+  id: '35',
+  text: 'Ben-Chetrit E, Touitou I. Familial Mediterranean fever in the world. Arthritis Rheum. 2009;61:1447-1453.'
+}, {
+  id: '36',
+  text: 'Foote EA, Postier RG, Greenfield RA, Bronze MS. Infectious aortitis. Curr Treat Options Cardiovasc Med. 2005;7:89-97.'
+}, {
+  id: '37',
+  text: 'Roberts WC, Barbin CM, Weissenborn MR, et al. Syphilis as a cause of thoracic aortic aneurysm. Am J Cardiol. 2015;116:1298-1303.'
+}, {
+  id: '38',
+  text: 'Heggtveit HA. Syphilitic aortitis: a clinicopathologic autopsy study of 100 cases, 1950 to 1960. Circulation. 1964;29:346-355.'
+}, {
+  id: '39',
+  text: 'Long R, Guzman R, Greenberg H, et al. Tuberculous mycotic aneurysm of the aorta: review of published medical and surgical experience. Chest. 1999;115:522-531.'
+}, {
+  id: '40',
+  text: 'Takamatsu A, Yamamoto K, Yamamoto T, et al. Single-center analysis of pegfilgrastim-induced aortitis using a drug prescription database and CT findings. Cancer Med. 2022;11:4118-4125. PMID:35943335'
+}, {
+  id: '41',
+  text: 'Hoshina H, Takei H. Granulocyte colony-stimulating factor-associated aortitis in the Japanese Adverse Drug Event Report database. Cytokine. 2019;119:47-51.'
+}, {
+  id: '42',
+  text: 'Salem JE, Manouchehri A, Moey M, et al. Cardiovascular toxicities associated with immune checkpoint inhibitors: an observational, retrospective, pharmacovigilance study. Lancet Oncol. 2018;19:1579-1589.'
+}, {
+  id: '43',
+  text: 'Daxini A, Cronin K, Sreih AG. Vasculitis associated with immune checkpoint inhibitors—a systematic review. Clin Rheumatol. 2018;37:2579-2584.'
+}, {
+  id: '44',
+  text: 'Coscas R, Arrive L, Tolédano C, et al. Mycotic aortic aneurysm due to intravesical BCG immunotherapy. Vascular. 2014;22:431-435.'
+}, {
+  id: '45',
+  text: 'Modrall JG, Sadjadi J. Early and late presentations of radiation arteritis. Semin Vasc Surg. 2003;16:209-214.'
+}];
+
+// ============================================================
+// SCORING ENGINE
+// ============================================================
+function computeScores(activeFeatures) {
+  const scores = {};
+  Object.keys(ETIOLOGIES).forEach(k => scores[k] = 0);
+  FEATURE_GROUPS.forEach(group => {
+    group.features.forEach(feat => {
+      if (activeFeatures[feat.id]) {
+        Object.entries(feat.weights).forEach(([etio, w]) => {
+          scores[etio] = (scores[etio] || 0) + w;
+        });
+      }
+    });
+  });
+  return scores;
+}
+function getMaxPossible() {
+  const maxScores = {};
+  Object.keys(ETIOLOGIES).forEach(k => maxScores[k] = 0);
+  FEATURE_GROUPS.forEach(group => {
+    group.features.forEach(feat => {
+      Object.entries(feat.weights).forEach(([etio, w]) => {
+        maxScores[etio] = (maxScores[etio] || 0) + w;
+      });
+    });
+  });
+  return maxScores;
+}
+const MAX_POSSIBLE = getMaxPossible();
+
+// ============================================================
+// COMPONENT
+// ============================================================
+function AortitisWorkup() {
+  const [activeFeatures, setActiveFeatures] = useState({});
+  const [selectedEtiology, setSelectedEtiology] = useState(null);
+  const [openGroups, setOpenGroups] = useState(() => {
+    const o = {};
+    FEATURE_GROUPS.forEach((g, i) => o[g.label] = i < 2);
+    return o;
+  });
+  const [referenceModal, setReferenceModal] = useState(false);
+  const scores = useMemo(() => computeScores(activeFeatures), [activeFeatures]);
+  const ranked = useMemo(() => {
+    return Object.entries(ETIOLOGIES).map(([id, e]) => ({
+      id,
+      ...e,
+      score: scores[id],
+      maxScore: MAX_POSSIBLE[id] || 1,
+      percent: MAX_POSSIBLE[id] ? Math.round(scores[id] / MAX_POSSIBLE[id] * 100) : 0
+    })).sort((a, b) => b.score - a.score);
+  }, [scores]);
+  const featureCount = Object.values(activeFeatures).filter(Boolean).length;
+  const topScore = ranked[0]?.score || 1;
+  const toggleFeature = id => {
+    setActiveFeatures(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+  const reset = () => {
+    setActiveFeatures({});
+    setSelectedEtiology(null);
+  };
+  const print = () => window.print();
+  const visibleRanked = featureCount === 0 ? ranked : ranked.filter(r => r.score > 0);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "aortitis-root"
+  }, /*#__PURE__*/React.createElement("style", null, `
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        .aortitis-root {
+          --bg: #f4efe6;
+          --bg-deep: #ebe4d4;
+          --ink: #1a1814;
+          --ink-soft: #4a443a;
+          --ink-faint: #7a7264;
+          --rule: #c9bfa8;
+          --rule-soft: #ddd3bb;
+          --paper: #fbf8f1;
+          --accent: #8b3a2f;
+          --accent-deep: #5a2419;
+          --gold: #8a6f1f;
+          --warn: #a04020;
+
+          font-family: 'Newsreader', Georgia, serif;
+          color: var(--ink);
+          background: var(--bg);
+          min-height: 100vh;
+          line-height: 1.55;
+          font-size: 15px;
+        }
+        .aortitis-root *, .aortitis-root *::before, .aortitis-root *::after { box-sizing: border-box; }
+        .display { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
+        .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+        .header-band {
+          background: var(--ink);
+          color: var(--paper);
+          border-bottom: 1px solid var(--accent);
+          position: relative;
+          overflow: hidden;
+        }
+        .header-band::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image:
+            radial-gradient(circle at 12% 50%, rgba(139, 58, 47, 0.18) 0%, transparent 38%),
+            radial-gradient(circle at 88% 30%, rgba(138, 111, 31, 0.12) 0%, transparent 42%);
+          pointer-events: none;
+        }
+        .header-inner {
+          max-width: 1480px;
+          margin: 0 auto;
+          padding: 28px 36px 24px;
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 32px;
+          position: relative;
+          z-index: 1;
+        }
+        .eyebrow {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10.5px;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(244, 239, 230, 0.55);
+          margin-bottom: 8px;
+        }
+        .title-main {
+          font-family: 'Fraunces', serif;
+          font-weight: 700;
+          font-size: clamp(34px, 4.2vw, 52px);
+          line-height: 1;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
+        }
+        .title-main em { font-style: italic; font-weight: 400; color: #d4a373; }
+        .subtitle {
+          margin-top: 10px;
+          color: rgba(244, 239, 230, 0.7);
+          max-width: 600px;
+          font-size: 14.5px;
+          line-height: 1.55;
+        }
+        .header-meta {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          color: rgba(244, 239, 230, 0.6);
+          text-align: right;
+          line-height: 1.7;
+          letter-spacing: 0.05em;
+        }
+        .header-meta strong { color: var(--paper); font-weight: 500; }
+
+        .toolbar {
+          background: var(--bg-deep);
+          border-bottom: 1px solid var(--rule);
+          padding: 10px 36px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          font-size: 13px;
+          flex-wrap: wrap;
+        }
+        .toolbar-status { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+        .stat { display: flex; align-items: baseline; gap: 8px; }
+        .stat-num { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; color: var(--accent-deep); line-height: 1; }
+        .stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); }
+        .toolbar-actions { display: flex; gap: 8px; }
+        .btn {
+          background: var(--paper);
+          border: 1px solid var(--rule);
+          color: var(--ink);
+          padding: 7px 14px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.15s;
+        }
+        .btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+        .btn-primary { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+        .btn-primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+
+        .layout {
+          max-width: 1480px;
+          margin: 0 auto;
+          padding: 28px 36px 60px;
+          display: grid;
+          grid-template-columns: 380px 1fr;
+          gap: 32px;
+        }
+        @media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } }
+
+        .panel {
+          background: var(--paper);
+          border: 1px solid var(--rule);
+          border-radius: 2px;
+        }
+        .panel-header {
+          padding: 14px 18px 12px;
+          border-bottom: 1px solid var(--rule-soft);
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+        }
+        .panel-title {
+          font-family: 'Fraunces', serif;
+          font-weight: 600;
+          font-size: 15px;
+          letter-spacing: -0.005em;
+        }
+        .panel-meta {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--ink-faint);
+        }
+
+        .feature-panel { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: thin; }
+        .feature-panel::-webkit-scrollbar { width: 8px; }
+        .feature-panel::-webkit-scrollbar-track { background: transparent; }
+        .feature-panel::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 4px; }
+        @media (max-width: 1024px) { .feature-panel { position: static; max-height: none; } }
+
+        .group { border-bottom: 1px solid var(--rule-soft); }
+        .group:last-child { border-bottom: none; }
+        .group-head {
+          width: 100%;
+          background: none;
+          border: none;
+          padding: 12px 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          font-family: 'Fraunces', serif;
+          font-size: 13.5px;
+          font-weight: 600;
+          color: var(--ink);
+          text-align: left;
+        }
+        .group-head:hover { background: var(--bg-deep); }
+        .group-head-left { display: flex; align-items: center; gap: 9px; }
+        .group-head svg { color: var(--ink-faint); }
+        .group-count {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          color: var(--ink-faint);
+          background: var(--bg-deep);
+          padding: 2px 7px;
+          border-radius: 2px;
+        }
+        .group-count.has { background: var(--accent); color: var(--paper); }
+        .group-body {
+          padding: 0 18px 12px;
+          display: grid;
+          gap: 4px;
+        }
+        .feature {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 8px;
+          font-size: 13.5px;
+          line-height: 1.4;
+          color: var(--ink-soft);
+          border-radius: 2px;
+          cursor: pointer;
+          transition: background 0.1s;
+        }
+        .feature:hover { background: var(--bg-deep); color: var(--ink); }
+        .feature.active { background: var(--bg-deep); color: var(--ink); font-weight: 500; }
+        .feature-checkbox {
+          width: 14px;
+          height: 14px;
+          border: 1.5px solid var(--ink-faint);
+          border-radius: 2px;
+          flex-shrink: 0;
+          position: relative;
+          transition: all 0.1s;
+        }
+        .feature.active .feature-checkbox {
+          background: var(--accent);
+          border-color: var(--accent);
+        }
+        .feature.active .feature-checkbox::after {
+          content: '';
+          position: absolute;
+          left: 3px;
+          top: 0px;
+          width: 4px;
+          height: 8px;
+          border: solid var(--paper);
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+
+        .differential-panel { padding: 0; }
+        .empty-state {
+          padding: 80px 40px;
+          text-align: center;
+          color: var(--ink-faint);
+        }
+        .empty-state-title {
+          font-family: 'Fraunces', serif;
+          font-size: 22px;
+          color: var(--ink);
+          margin-bottom: 10px;
+          font-style: italic;
+          font-weight: 400;
+        }
+
+        .etio-list { display: flex; flex-direction: column; }
+        .etio-row {
+          display: grid;
+          grid-template-columns: auto 1fr auto auto;
+          gap: 16px;
+          align-items: center;
+          padding: 14px 22px;
+          border-bottom: 1px solid var(--rule-soft);
+          cursor: pointer;
+          transition: background 0.12s;
+        }
+        .etio-row:hover { background: var(--bg-deep); }
+        .etio-row.top { background: linear-gradient(to right, rgba(139, 58, 47, 0.06), transparent 40%); }
+        .etio-rank {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          color: var(--ink-faint);
+          width: 28px;
+          letter-spacing: 0.05em;
+        }
+        .etio-row.top .etio-rank { color: var(--accent); font-weight: 600; }
+        .etio-name-block { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .etio-name {
+          font-family: 'Fraunces', serif;
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--ink);
+        }
+        .etio-row.top .etio-name { color: var(--accent-deep); }
+        .etio-cat {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 9.5px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        .etio-bar-block { width: 120px; }
+        .etio-bar {
+          height: 4px;
+          background: var(--rule-soft);
+          position: relative;
+          overflow: hidden;
+        }
+        .etio-bar-fill {
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          background: var(--accent);
+          transition: width 0.3s;
+        }
+        .etio-row.top .etio-bar-fill { background: linear-gradient(to right, var(--accent), var(--gold)); }
+        .etio-score {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          color: var(--ink-faint);
+          margin-top: 4px;
+          letter-spacing: 0.05em;
+        }
+        .etio-arrow { color: var(--ink-faint); }
+
+        .detail-panel {
+          background: var(--paper);
+          border: 1px solid var(--rule);
+          border-radius: 2px;
+          padding: 28px 32px;
+          margin-top: 24px;
+        }
+        .detail-eyebrow {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--ink-faint);
+          margin-bottom: 8px;
+        }
+        .detail-title {
+          font-family: 'Fraunces', serif;
+          font-size: 32px;
+          font-weight: 600;
+          line-height: 1.1;
+          margin-bottom: 8px;
+        }
+        .detail-blurb {
+          font-size: 16px;
+          color: var(--ink-soft);
+          font-style: italic;
+          margin-bottom: 22px;
+          max-width: 720px;
+        }
+        .detail-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px 36px;
+        }
+        @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
+        .detail-section h4 {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10.5px;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--ink-faint);
+          margin: 0 0 10px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid var(--rule-soft);
+        }
+        .detail-section ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+        }
+        .detail-section li {
+          font-size: 14px;
+          line-height: 1.55;
+          color: var(--ink-soft);
+          padding-left: 14px;
+          position: relative;
+        }
+        .detail-section li::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 9px;
+          width: 6px;
+          height: 1px;
+          background: var(--accent);
+        }
+        .detail-prose {
+          font-size: 14.5px;
+          line-height: 1.65;
+          color: var(--ink-soft);
+        }
+        .citation-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 22px;
+          padding-top: 18px;
+          border-top: 1px solid var(--rule-soft);
+        }
+        .cite-chip {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          padding: 3px 10px;
+          background: var(--bg-deep);
+          color: var(--ink);
+          border: 1px solid var(--rule);
+          cursor: pointer;
+          transition: all 0.12s;
+        }
+        .cite-chip:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+        .red-flag-banner {
+          background: rgba(160, 64, 32, 0.08);
+          border-left: 3px solid var(--warn);
+          padding: 14px 18px;
+          margin-bottom: 22px;
+          font-size: 14px;
+          color: var(--accent-deep);
+          line-height: 1.55;
+        }
+        .red-flag-banner strong {
+          font-family: 'Fraunces', serif;
+          font-weight: 600;
+          font-style: italic;
+          color: var(--warn);
+        }
+
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(26, 24, 20, 0.7);
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 60px 24px;
+          z-index: 100;
+          overflow-y: auto;
+        }
+        .modal {
+          background: var(--paper);
+          border: 1px solid var(--rule);
+          max-width: 900px;
+          width: 100%;
+          padding: 32px 40px;
+        }
+        .modal-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          margin-bottom: 24px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid var(--rule);
+        }
+        .ref-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          counter-reset: ref;
+        }
+        .ref-list li {
+          counter-increment: ref;
+          padding: 10px 0 10px 38px;
+          border-bottom: 1px solid var(--rule-soft);
+          font-size: 13.5px;
+          line-height: 1.5;
+          position: relative;
+          color: var(--ink-soft);
+        }
+        .ref-list li::before {
+          content: counter(ref);
+          position: absolute;
+          left: 0;
+          top: 10px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10.5px;
+          color: var(--ink-faint);
+          letter-spacing: 0.05em;
+          width: 28px;
+          text-align: right;
+        }
+
+        .footer-rule {
+          max-width: 1480px;
+          margin: 40px auto 0;
+          padding: 0 36px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10.5px;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: var(--ink-faint);
+          border-top: 1px solid var(--rule);
+          padding-top: 16px;
+          padding-bottom: 30px;
+          display: flex;
+          justify-content: space-between;
+          gap: 24px;
+          flex-wrap: wrap;
+        }
+
+        @media print {
+          .toolbar, .feature-panel, .header-meta, .btn { display: none !important; }
+          .layout { grid-template-columns: 1fr; padding: 0; }
+          .aortitis-root { background: white; }
+          .panel, .detail-panel { border: 1px solid #ccc; box-shadow: none; }
+        }
+      `), /*#__PURE__*/React.createElement("header", {
+    className: "header-band"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "header-inner"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow"
+  }, "Clinical Reference \xB7 Subspecialty"), /*#__PURE__*/React.createElement("h1", {
+    className: "title-main"
+  }, "Aortitis", /*#__PURE__*/React.createElement("em", null, " \xB7 etiologic workup")), /*#__PURE__*/React.createElement("p", {
+    className: "subtitle"
+  }, "An interactive differential generator. Select clinical features, imaging signs, laboratory values, and histologic patterns; the panel ranks the 29 reported causes and surfaces red flags, investigations, and primary literature.")), /*#__PURE__*/React.createElement("div", {
+    className: "header-meta"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, "29"), " ETIOLOGIES"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, FEATURE_GROUPS.reduce((a, g) => a + g.features.length, 0)), " CLINICAL FEATURES"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("strong", null, REFERENCES.length), " REFERENCES")))), /*#__PURE__*/React.createElement("div", {
+    className: "toolbar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "toolbar-status"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "stat"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "stat-num"
+  }, featureCount), /*#__PURE__*/React.createElement("span", {
+    className: "stat-lbl"
+  }, "features active")), featureCount > 0 && ranked[0]?.score > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "stat"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "stat-num"
+  }, ranked[0].name.split(' ').slice(0, 2).join(' ')), /*#__PURE__*/React.createElement("span", {
+    className: "stat-lbl"
+  }, "top differential")), featureCount > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "stat"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "stat-num"
+  }, visibleRanked.filter(r => r.score > 0).length), /*#__PURE__*/React.createElement("span", {
+    className: "stat-lbl"
+  }, "active matches"))), /*#__PURE__*/React.createElement("div", {
+    className: "toolbar-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    onClick: () => setReferenceModal(true)
+  }, /*#__PURE__*/React.createElement(BookOpen, {
+    size: 12
+  }), " References"), /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    onClick: print
+  }, /*#__PURE__*/React.createElement(Printer, {
+    size: 12
+  }), " Print / PDF"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    onClick: reset,
+    disabled: featureCount === 0
+  }, /*#__PURE__*/React.createElement(RotateCcw, {
+    size: 12
+  }), " Reset"))), /*#__PURE__*/React.createElement("div", {
+    className: "layout"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "panel feature-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel-title"
+  }, "Clinical features"), /*#__PURE__*/React.createElement("div", {
+    className: "panel-meta"
+  }, "Patient findings")), FEATURE_GROUPS.map(group => {
+    const Icon = group.icon;
+    const groupActiveCount = group.features.filter(f => activeFeatures[f.id]).length;
+    const isOpen = openGroups[group.label];
+    return /*#__PURE__*/React.createElement("div", {
+      className: "group",
+      key: group.label
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "group-head",
+      onClick: () => setOpenGroups({
+        ...openGroups,
+        [group.label]: !isOpen
+      })
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "group-head-left"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      size: 14
+    }), /*#__PURE__*/React.createElement("span", null, group.label)), /*#__PURE__*/React.createElement("span", {
+      className: `group-count ${groupActiveCount > 0 ? 'has' : ''}`
+    }, groupActiveCount > 0 ? `${groupActiveCount}/${group.features.length}` : group.features.length)), isOpen && /*#__PURE__*/React.createElement("div", {
+      className: "group-body"
+    }, group.features.map(feat => /*#__PURE__*/React.createElement("label", {
+      key: feat.id,
+      className: `feature ${activeFeatures[feat.id] ? 'active' : ''}`
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      checked: !!activeFeatures[feat.id],
+      onChange: () => toggleFeature(feat.id),
+      style: {
+        display: 'none'
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "feature-checkbox"
+    }), /*#__PURE__*/React.createElement("span", null, feat.label)))));
+  })), /*#__PURE__*/React.createElement("main", null, /*#__PURE__*/React.createElement("div", {
+    className: "panel differential-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel-title"
+  }, "Ranked differential diagnosis"), /*#__PURE__*/React.createElement("div", {
+    className: "panel-meta"
+  }, featureCount === 0 ? `All ${ranked.length} entities` : `Sorted by weighted score`)), featureCount === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "empty-state"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "empty-state-title"
+  }, "Awaiting clinical input"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      maxWidth: 420,
+      margin: '0 auto',
+      fontSize: 14
+    }
+  }, "Select features from the left panel. Each finding contributes weighted evidence toward one or more etiologies. The differential refreshes in real time. Click any entity to see the full clinical, radiologic, laboratory, and histologic profile."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 32,
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: 10.5,
+      letterSpacing: '0.22em',
+      color: 'var(--ink-faint)',
+      textTransform: 'uppercase'
+    }
+  }, "Categories represented"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 8,
+      justifyContent: 'center',
+      marginTop: 12
+    }
+  }, Object.entries(CATEGORIES).map(([k, c]) => /*#__PURE__*/React.createElement("span", {
+    key: k,
+    style: {
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: 10,
+      letterSpacing: '0.14em',
+      textTransform: 'uppercase',
+      padding: '5px 11px',
+      background: 'var(--bg-deep)',
+      color: c.accent,
+      border: `1px solid ${c.accent}33`
+    }
+  }, c.label)))) : /*#__PURE__*/React.createElement("div", {
+    className: "etio-list"
+  }, visibleRanked.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "empty-state",
+    style: {
+      padding: '40px 24px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "empty-state-title"
+  }, "No matches"), /*#__PURE__*/React.createElement("p", null, "Selected features do not weight any cataloged etiology. Try adjusting the inputs.")) : visibleRanked.map((e, idx) => {
+    const cat = CATEGORIES[e.category];
+    const fillPct = topScore > 0 ? Math.round(e.score / topScore * 100) : 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: e.id,
+      className: `etio-row ${idx === 0 && e.score > 0 ? 'top' : ''}`,
+      onClick: () => setSelectedEtiology(e.id)
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "etio-rank"
+    }, String(idx + 1).padStart(2, '0')), /*#__PURE__*/React.createElement("div", {
+      className: "etio-name-block"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "etio-name"
+    }, e.name), /*#__PURE__*/React.createElement("span", {
+      className: "etio-cat",
+      style: {
+        color: cat.accent
+      }
+    }, cat.label)), /*#__PURE__*/React.createElement("div", {
+      className: "etio-bar-block"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "etio-bar"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "etio-bar-fill",
+      style: {
+        width: `${fillPct}%`
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "etio-score"
+    }, "score ", e.score, " \xB7 ", e.percent, "% of max")), /*#__PURE__*/React.createElement(ChevronRight, {
+      size: 16,
+      className: "etio-arrow"
+    }));
+  }))), selectedEtiology && /*#__PURE__*/React.createElement(EtiologyDetail, {
+    etiology: ETIOLOGIES[selectedEtiology],
+    etiologyId: selectedEtiology,
+    onClose: () => setSelectedEtiology(null)
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "footer-rule"
+  }, /*#__PURE__*/React.createElement("span", null, "Aortitis Workup \xB7 Decision Support"), /*#__PURE__*/React.createElement("span", null, "Designed for subspecialty clinical reference. Not a substitute for individualized assessment.")), referenceModal && /*#__PURE__*/React.createElement(ReferenceModal, {
+    onClose: () => setReferenceModal(false)
+  }));
+}
+
+// ============================================================
+// DETAIL COMPONENT
+// ============================================================
+function EtiologyDetail({
+  etiology,
+  etiologyId,
+  onClose
+}) {
+  const cat = CATEGORIES[etiology.category];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "detail-panel",
+    id: "etio-detail"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "detail-eyebrow",
+    style: {
+      color: cat.accent
+    }
+  }, cat.label), /*#__PURE__*/React.createElement("h2", {
+    className: "detail-title"
+  }, etiology.name), /*#__PURE__*/React.createElement("p", {
+    className: "detail-blurb"
+  }, etiology.blurb)), /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    onClick: onClose,
+    style: {
+      padding: '6px 8px',
+      flexShrink: 0
+    },
+    "aria-label": "Close"
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 14
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "red-flag-banner"
+  }, /*#__PURE__*/React.createElement("strong", null, "Red flags \u25B8 "), etiology.redFlags[0], etiology.redFlags.length > 1 && ` · ${etiology.redFlags[1]}`), /*#__PURE__*/React.createElement("div", {
+    className: "detail-grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "detail-section"
+  }, /*#__PURE__*/React.createElement("h4", null, "Clinical clues & red flags"), /*#__PURE__*/React.createElement("ul", null, etiology.redFlags.map((rf, i) => /*#__PURE__*/React.createElement("li", {
+    key: i
+  }, rf)))), /*#__PURE__*/React.createElement("div", {
+    className: "detail-section"
+  }, /*#__PURE__*/React.createElement("h4", null, "Imaging features"), /*#__PURE__*/React.createElement("ul", null, etiology.imaging.map((im, i) => /*#__PURE__*/React.createElement("li", {
+    key: i
+  }, im)))), /*#__PURE__*/React.createElement("div", {
+    className: "detail-section"
+  }, /*#__PURE__*/React.createElement("h4", null, "Laboratory"), /*#__PURE__*/React.createElement("ul", null, etiology.labs.map((l, i) => /*#__PURE__*/React.createElement("li", {
+    key: i
+  }, l)))), /*#__PURE__*/React.createElement("div", {
+    className: "detail-section"
+  }, /*#__PURE__*/React.createElement("h4", null, "Histopathology"), /*#__PURE__*/React.createElement("p", {
+    className: "detail-prose"
+  }, etiology.histology)), /*#__PURE__*/React.createElement("div", {
+    className: "detail-section"
+  }, /*#__PURE__*/React.createElement("h4", null, "Aortic distribution"), /*#__PURE__*/React.createElement("p", {
+    className: "detail-prose"
+  }, etiology.distribution)), /*#__PURE__*/React.createElement("div", {
+    className: "detail-section"
+  }, /*#__PURE__*/React.createElement("h4", null, "Diagnostic workup"), /*#__PURE__*/React.createElement("ul", null, etiology.workup.map((w, i) => /*#__PURE__*/React.createElement("li", {
+    key: i
+  }, w))))), /*#__PURE__*/React.createElement("div", {
+    className: "citation-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "panel-meta",
+    style: {
+      alignSelf: 'center',
+      marginRight: 8
+    }
+  }, "References"), etiology.citations.map(c => {
+    const ref = REFERENCES.find(r => r.id === c);
+    return /*#__PURE__*/React.createElement("span", {
+      key: c,
+      className: "cite-chip",
+      title: ref?.text || ''
+    }, "[", c, "]");
+  })));
+}
+
+// ============================================================
+// REFERENCE MODAL
+// ============================================================
+function ReferenceModal({
+  onClose
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "modal-overlay",
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "detail-eyebrow"
+  }, "Bibliography"), /*#__PURE__*/React.createElement("h3", {
+    className: "detail-title",
+    style: {
+      fontSize: 26
+    }
+  }, "Primary literature")), /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 12
+  }), " Close")), /*#__PURE__*/React.createElement("ol", {
+    className: "ref-list"
+  }, REFERENCES.map(r => /*#__PURE__*/React.createElement("li", {
+    key: r.id
+  }, r.text)))));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(AortitisWorkup));
+
+</script>
+</body>
+</html>
